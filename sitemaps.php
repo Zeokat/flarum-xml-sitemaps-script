@@ -1,12 +1,12 @@
 <?php
 
-#Path where Flarum is installed (NOT ends with slash)
+// Path where Flarum is installed (NOT ends with slash)
 $flarum_path = '/var/www/html/flarum';
 
-#Abrir archivo de configuracion de Flarum
+// Open Flarum configuration file
 $config = include $flarum_path . '/config.php';
 
-#Obtener las credenciales y datos de la base de datos mysql
+// Get database credentials and cinfiguration parameters
 $flarum_base_url = $config["url"];
 $flarum_mysql_user = $config["database"]["username"];
 $flarum_mysql_pass = $config["database"]["password"];
@@ -15,33 +15,36 @@ $flarum_mysql_db = $config["database"]["database"];
 $flarum_mysql_db_prefix = $config["database"]["prefix"];
 
 
-/*¿Cuantas urls puede haber como maximo en un sitemap?
-* Google tiene unos límites a la hora de procesar los sitemaps y sólo procesará
-* sitemaps que contengan 50000 URLs y de tamaño máximo (sin comprimir) de 10 MB
+/*
+* How many URLs can contain a sitemap?
+* Google has limits when it comes to processing sitemaps and will only process
+* sitemaps containing 50000 URLs and maximum size (uncompressed) of 10 MB
+* TODO: build a mechanism to check this limits for large communities
 */
 
-// Creamos el indice de sitemaps
+// Build sitemap index
 $sitemap_index_xml = BuildSitemapIndex($flarum_base_url);
 $sitemap_index_path = $flarum_path . '/sitemap.xml';
 WriteSitemapFile($sitemap_index_path, $sitemap_index_xml);
 
-// Creamos el sitemap de las discusiones
+// Build discussions sitemap
 $sitemap_posts_xml = BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_pass, $flarum_mysql_db, $flarum_mysql_db_prefix, $flarum_base_url);
 $sitemap_posts_path = $flarum_path . '/sitemap-posts.xml';
 WriteSitemapFile($sitemap_posts_path, $sitemap_posts_xml);
 
-// Creamos el sitemap de las etiquetas
+// Build tags sitemap
 $sitemap_tags_xml = BuildTagsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_pass, $flarum_mysql_db, $flarum_mysql_db_prefix, $flarum_base_url);
 $sitemap_tags_path = $flarum_path . '/sitemap-tags.xml';
 WriteSitemapFile($sitemap_tags_path, $sitemap_tags_xml);
 
-// Creamos el sitemap de los usuarios
+// Build users sitemap
 $sitemap_users_xml = BuildUsersSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_pass, $flarum_mysql_db, $flarum_mysql_db_prefix, $flarum_base_url);
 $sitemap_users_path = $flarum_path . '/sitemap-users.xml';
 WriteSitemapFile($sitemap_users_path, $sitemap_users_xml);
 
 /**
 * Function to generate XML code of the sitemap index
+* TODO: allow choose wich sitemaps to generate
 * @param string $flarum_base_url Base forum URL
 * @return string The sitemap index XML contents
 */
@@ -49,11 +52,11 @@ function BuildSitemapIndex($flarum_base_url)
 {
   $sitemaps = array('sitemap-posts.xml', 'sitemap-users.xml', 'sitemap-tags.xml');
 
-  //Open Sitemap XML Header
+  // Open Sitemap XML Header
   $sitemap_contents = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
   $sitemap_contents .= '<sitemapindex xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/siteindex.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
 
-  //Add different sitemaps files to sitemapindex
+  // Add different sitemaps files to sitemapindex
   foreach ($sitemaps as $res) {
     $sitemap_contents .= "\n\t" . '<sitemap>';
     $sitemap_contents .= "\n\t\t" . '<loc>' . EscapeXML($flarum_base_url) . '/' . $res . '</loc>';
@@ -61,7 +64,7 @@ function BuildSitemapIndex($flarum_base_url)
     $sitemap_contents .= "\n\t" . '</sitemap>';
   }
 
-  //Close Sitemap XML Header
+  // Close Sitemap XML Header
   $sitemap_contents .= "\n" . '</sitemapindex>';
 
   return $sitemap_contents;
@@ -69,6 +72,7 @@ function BuildSitemapIndex($flarum_base_url)
 
 /**
 * Function to generate XML code of the discussions sitemap
+* TODO: allow custom changefreq and priority
 * @param string $flarum_mysql_host Base forum URL
 * @param string $flarum_mysql_user Base forum URL
 * @param string $flarum_mysql_pass Base forum URL
@@ -108,7 +112,7 @@ function BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum
       echo "0 results";
   }
 
-  //Close Sitemap XML Header
+  // Close Sitemap XML Header
   $sitemap_contents .= "\n" . '</urlset>';
 
   // Close MySQL connection
@@ -119,6 +123,7 @@ function BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum
 
 /**
 * Function to generate XML code of the tags sitemap
+* TODO: allow custom changefreq and priority
 * @param string $flarum_mysql_host Base forum URL
 * @param string $flarum_mysql_user Base forum URL
 * @param string $flarum_mysql_pass Base forum URL
@@ -158,7 +163,7 @@ function BuildTagsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_
       echo "0 results";
   }
 
-  //Close Sitemap XML Header
+  // Close Sitemap XML Header
   $sitemap_contents .= "\n" . '</urlset>';
 
   // Close MySQL connection
@@ -169,6 +174,7 @@ function BuildTagsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_
 
 /**
 * Function to generate XML code of the users sitemap
+* TODO: allow custom changefreq and priority
 * @param string $flarum_mysql_host Base forum URL
 * @param string $flarum_mysql_user Base forum URL
 * @param string $flarum_mysql_pass Base forum URL
@@ -208,7 +214,7 @@ function BuildUsersSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql
       echo "0 results";
   }
 
-  //Close Sitemap XML Header
+  // Close Sitemap XML Header
   $sitemap_contents .= "\n" . '</urlset>';
 
   // Close MySQL connection
