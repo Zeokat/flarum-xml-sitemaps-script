@@ -1,10 +1,10 @@
 <?php
 
-// Path where Flarum is installed (NOT ends with slash)
-$flarum_path = '/var/www/html/flarum';
+// Public path where Flarum is installed (NOT ends with slash)
+$flarum_path = '/var/www/flarum/public';
 
-// Open Flarum configuration file
-$config = include $flarum_path . '/config.php';
+// Path to open Flarum configuration file
+$config = include dirname($flarum_path).'/config.php';
 
 // Get database credentials and cinfiguration parameters
 $flarum_base_url = $config["url"];
@@ -93,7 +93,7 @@ function BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum
   }
 
   // Run SQL query
-  $sql = "SELECT id, slug, last_time FROM " . $flarum_mysql_db_prefix . "discussions WHERE is_approved=1 AND is_private=0";
+  $sql = "SELECT distinct(slug), id, last_posted_at FROM " . $flarum_mysql_db_prefix . "discussions LEFT JOIN " . $flarum_mysql_db_prefix . "discussion_tag ON id = discussion_id WHERE tag_id NOT IN (SELECT id FROM ". $flarum_mysql_db_prefix . "tags WHERE is_restricted = 1)";
   $result = mysqli_query($conn, $sql);
 
   // Build XML data with MySQL data
@@ -103,7 +103,7 @@ function BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum
       while($row = mysqli_fetch_assoc($result)) {
         $sitemap_contents .= "\n\t<url>\n";
         $sitemap_contents .= "\t\t<loc>" . EscapeXML($flarum_base_url) . '/d/' . $row["id"] . '-' . EscapeXML($row["slug"]) . "</loc>\n";
-        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_time"])) . "</lastmod>\n";
+        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_posted_at"])) . "</lastmod>\n";
         $sitemap_contents .= "\t\t<changefreq>" . 'weekly' . "</changefreq>\n";
         $sitemap_contents .= "\t\t<priority>" . '0.8' . "</priority>\n";
         $sitemap_contents .= "\t</url>";
@@ -122,7 +122,7 @@ function BuildDiscussionsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum
 }
 
 /**
-* Function to generate XML code of the tags sitemap
+* Function to generate XML code of the tags sitemap (restricted and hidden tags are not included)
 * TODO: allow custom changefreq and priority
 * @param string $flarum_mysql_host Base forum URL
 * @param string $flarum_mysql_user Base forum URL
@@ -144,7 +144,7 @@ function BuildTagsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_
   }
 
   // Run SQL query
-  $sql = "SELECT slug, last_time FROM " . $flarum_mysql_db_prefix . "tags WHERE is_restricted=0 AND is_hidden=0";
+  $sql = "SELECT slug, last_posted_at FROM " . $flarum_mysql_db_prefix . "tags WHERE is_restricted=0 AND is_hidden=0";
   $result = mysqli_query($conn, $sql);
 
   // Build XML data with MySQL data
@@ -154,7 +154,7 @@ function BuildTagsSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql_
       while($row = mysqli_fetch_assoc($result)) {
         $sitemap_contents .= "\n\t<url>\n";
         $sitemap_contents .= "\t\t<loc>" . EscapeXML($flarum_base_url) . '/t/' . EscapeXML($row["slug"]) . "</loc>\n";
-        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_time"])) . "</lastmod>\n";
+        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_posted_at"])) . "</lastmod>\n";
         $sitemap_contents .= "\t\t<changefreq>" . 'daily' . "</changefreq>\n";
         $sitemap_contents .= "\t\t<priority>" . '0.5' . "</priority>\n";
         $sitemap_contents .= "\t</url>";
@@ -195,7 +195,7 @@ function BuildUsersSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql
   }
 
   // Run SQL query
-  $sql = "SELECT username, last_seen_time FROM " . $flarum_mysql_db_prefix . "users WHERE is_activated=1";
+  $sql = "SELECT username, last_seen_at FROM " . $flarum_mysql_db_prefix . "users WHERE is_email_confirmed=1";
   $result = mysqli_query($conn, $sql);
 
   // Build XML data with MySQL data
@@ -205,7 +205,7 @@ function BuildUsersSitemap($flarum_mysql_host, $flarum_mysql_user, $flarum_mysql
       while($row = mysqli_fetch_assoc($result)) {
         $sitemap_contents .= "\n\t<url>\n";
         $sitemap_contents .= "\t\t<loc>" . EscapeXML($flarum_base_url) . '/u/' . EscapeXML($row["username"]) . "</loc>\n";
-        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_seen_time"])) . "</lastmod>\n";
+        $sitemap_contents .= "\t\t<lastmod>" . date('Y-m-d\TH:i:s+00:00' , strtotime($row["last_seen_at"])) . "</lastmod>\n";
         $sitemap_contents .= "\t\t<changefreq>" . 'daily' . "</changefreq>\n";
         $sitemap_contents .= "\t\t<priority>" . '0.4' . "</priority>\n";
         $sitemap_contents .= "\t</url>";
